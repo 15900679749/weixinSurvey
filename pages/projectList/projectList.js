@@ -14,13 +14,14 @@ Page({
 		secondCateGoryList: [], //二级
 		leftOtherArray: [], //每个一级分类下面的二级分类
 		categoryType: 0,
-		sName: "", //选中区域
-		page_size: 6, //每页显示条数
-		page_current: 1, //当前页
-		page_count: 1, //总页数
-		dataLeft: [], //左边区域
-		dataRight: [], //右边题列表
-		isMore: true //true是有更多数据，false是没有更多数据
+		dataAll: {},
+		sName: "",
+		page_size: 10,
+		page_current: 1,
+		page_total: 0,
+		dataLeft: [],
+		isEnd: true,
+    itemStatus:""
 	},
 	/**
 	 * 生命周期函数--监听页面加载
@@ -36,7 +37,6 @@ Page({
 				});
 			}
 		});
-   
 	},
 	/**
 	 * 生命周期函数--监听页面初次渲染完成
@@ -44,43 +44,34 @@ Page({
 	onReady: function() {
 
 	},
-	onPageScroll: function(e) {
-		// console.log(e.scrollTop);
-	},
+
 	/**
 	 * 生命周期函数--监听页面显示
 	 */
 	onShow: function() {
-	 if(!wx.getStorageSync("userOpenid")) return;
-		 this.initialization("加载中");
+		if(!wx.getStorageSync("userOpenid")) return;
+		this.initialization("加载中");
 	},
 	initialization: function(msg) {
-		this.getLeftArrary().then((res) => {
-			var leftArrary = res;
+		this.getData(msg).then(data => {
+			var arrary1 = this.getLeftArrary(data);
+			var carrary = [];
+			for(var k = 0; k < this.data.page_current * this.data.page_size; k++) {
+				arrary1[k] && carrary.push(arrary1[k]);
+			}
+			var isUp = this.data.page_total <= this.data.page_current;
 			this.setData({
-				firstCategoryList: res,
-				sName: this.data.sName || leftArrary[0]
+				sName: carrary[0],
+				page_total: Math.ceil(arrary1.length / this.data.page_size),
+				isEnd: isUp,
+				dataLeft: arrary1
 			});
-			this.getRightArrary(msg).then((data) => {
-				this.setData({
-					secondCateGoryList: data
-				});
+			var arrary2 = this.getRightArry(this.data.sName);
+			this.setData({
+				firstCategoryList: carrary,
+				secondCateGoryList: arrary2
 			});
 		});
-
-		//		this.getData(msg).then(data => {
-		//			// var arrary1 = this.getLeftArrary();
-		//
-		//			var arrary2 = [];
-		//			// for (var k = 0; k < this.data.page_current * this.data.page_size; k++) {
-		//
-		//			var arrary2 = this.getRightArry();
-		//			// debugger
-		//			this.setData({
-		//				// firstCategoryList: carrary,
-		//				secondCateGoryList: arrary2
-		//			});
-		//		});
 	},
 	/**
 	 * 生命周期函数--监听页面隐藏
@@ -95,109 +86,89 @@ Page({
 	onUnload: function() {
 
 	},
-	// updateCategoryListData: function(categoryListArray) {
-	// 	var that = this;
-	// 	var leftArray = [];
-	// 	var rightArray = [];
-	// 	for(let i in categoryListArray) {
-	// 		var object = categoryListArray[i];
-	// 		leftArray = leftArray.concat(i);
-	// 		for(let j = 0; j < object.length; j++) {
-	// 			rightArray = rightArray.concat(object[j]);
-	// 		}
-	// 	}
+	getRightArry: function(name) {
+		return this.data.dataAll[name];
+	},
+	updateCategoryListData: function(categoryListArray) {
 
-	// 	if(that.data.page == 1) {
-	// 		rightArray = []
-	// 	}
+		//		var leftArray =this.firstCategoryList;
+		//		var rightArray = this.secondCateGoryList;
+		//		for(let i in categoryListArray) {
+		//			var object = categoryListArray[i];
+		//			leftArray = leftArray.concat(i);
+		//			for(let j = 0; j < object.length; j++) {
+		//				rightArray = rightArray.concat(object[j]);
+		//			}
+		//		}
+		//		
+		//		return;
+		var that = this;
+		var leftArray = [];
+		var rightArray = [];
 
-	// 	if(rightArray.length > that.select.size) {
-	// 		that.select.page++
-	// 			that.select.isEnd = false;
-	// 	} else {
-	// 		that.select.isEnd = true;
-	// 	}
-	// 	that.setData({
-	// 		firstCategoryList: leftArray,
-	// 		secondCateGoryList: rightArray,
-	// 	})
-	// },
+		// var leftOtherlist = this.data.leftOtherArray;
+		for(let i in categoryListArray) {
+			var object = categoryListArray[i];
+			leftArray = leftArray.concat(i);
+			for(let j = 0; j < object.length; j++) {
+				rightArray = rightArray.concat(object[j]);
+			}
+		}
+		// for(let i = 0; i < categoryListArray.length; i++) {
+		// 	var object = categoryListArray[i];
+		// 	if(object.menu == '1') {
+		// 		leftArray.push(object);
+		// 	} else if(object.menu == '2') {
+		// 		rightArray.push(object);
+		// 	}
+		// }
+
+		if(that.data.page == 1) {
+			rightArray = []
+		}
+
+		if(rightArray.length > that.select.size) {
+			that.select.page++
+				that.select.isEnd = false;
+		} else {
+			that.select.isEnd = true;
+		}
+		that.setData({
+			firstCategoryList: leftArray,
+			secondCateGoryList: rightArray,
+			// leftOtherArray: leftOtherlist
+		})
+	},
 	getData: function(massege) {
 		var _this = this;
-
-		// if(!_this.data.isEnd) return;
-		this.getLeftArrary().then(data => {
-
-			return new Promise((resolve, reject) => {
-
-				var isUp = _this.data.page_total > _this.data.page_current;
-
-				api.getAppSubjectLst({
-					data: {
-						area_belong: data[0],
-						p: _this.data.page_current,
-						pageSize: 6
-					},
-					success: (res) => {
-
-						_this.setData({
-							dataAll: res.data.data.data,
-						});
-						resolve(res.data.data);
-					},
-					fail: res => {
-						reject(res);
-					}
-				}, massege);
-			});
-
-		})
-
-	},
-	// getLeftArrary: function(dataAll) {
-	//   var leftArrary = [];
-	//   for (var keyName in dataAll) {
-	//     leftArrary.push(keyName);
-	//   }
-	//   return leftArrary;
-	// },
-	getRightArrary: function(msg) {
-		var _this = this;
+		if(!_this.data.isEnd) return;
 		return new Promise((resolve, reject) => {
 			api.getAppSubjectLst({
-				data: {
-					area_belong: _this.data.sName,
-					p: _this.data.page_current,
-					pageSize: _this.data.page_size
-				},
 				success: (res) => {
-					var pageCount = res.data.data.pageInfo.page||0;
-         
-					var isM = pageCount > _this.data.page_current;
+          var itemstatus = res.data.data.status
+          if(itemstatus=="2"){
+            itemstatus="可编辑"
+          }else{
+            itemstatus="已关闭"
+          }
 					_this.setData({
-						page_count: pageCount,
-						isMore: isM
+						dataAll: res.data.data,
+            itemStatus: itemstatus
 					});
-					resolve(res.data.data.data);
-				},
-				fail: res => {
-					reject(res);
-				}
-			}, msg);
-		});
-	},
-	getLeftArrary: function(msg) {
-		var _this = this;
-		return new Promise((resolve, reject) => {
-			api.getAppAreaInfo({
-				success: (res) => {
 					resolve(res.data.data);
 				},
 				fail: res => {
 					reject(res);
 				}
-			}, msg);
-		})
+			}, massege);
+		});
+	},
+	getLeftArrary: function(dataAll) {
+		var leftArrary = [];
+		for(var keyName in dataAll) {
+			leftArrary.push(keyName);
+		}
+		return leftArrary;
 	},
 	tapCategory: function(event) {
 		var that = this;
@@ -205,97 +176,59 @@ Page({
 			categoryType: event.target.dataset.id,
 			sName: event.target.dataset.name,
 		});
+		var mutableTemArray = this.getRightArry(this.data.sName);
 		that.setData({
-			page_size: 6,
-			page_current: 1,
-			page_total: 0,
-			isEnd: true,
-			secondCateGoryList: []
+			secondCateGoryList: mutableTemArray
 		});
-		this.getRightArrary().then(data => {
-			that.setData({
-				secondCateGoryList: data
-			});
-		});
-		// 
-		// var mutableTemArray=[];
-		//		var mutableTemArray = this.getRightArry();
-		// debugger
-		// for (var i = 0; i < 30; i++) {
-
-		// mutableTemArray.push(this.getRightArry(this.data.sName)[i])
-
-		// }
-		//		that.setData({
-		//			secondCateGoryList: mutableTemArray
-		//		});
 	},
 	/**
-	 * 页面相关事件处理函数--监听用户下拉动作  上拉应该是刷新吧？
+	 * 页面相关事件处理函数--监听用户下拉动作
 	 */
 	onPullDownRefresh: function() {
 		this.setData({
-			page_size: 6,
+			dataAll: {},
+			sName: "",
+			page_size: 10,
 			page_current: 1,
 			page_total: 0,
-			isEnd: false,
-			secondCateGoryList: []
+			isEnd: true
 		});
-		this.initialization();
-		wx.stopPullDownRefresh();
+		this.initialization("正在刷新数据");
 	},
+
 	/**
 	 * 页面上拉触底事件的处理函数
 	 */
 	onReachBottom: function() {
-		console.log("this.data.isMore=" + this.data.isMore);
-		if(!this.data.isMore) {
+		if(!this.data.isEnd) {
 			return wx.showToast({
 				title: '没有更多数据'
 			});
 		}
-		var cpage = this.data.page_current + 1;
+		wx.showLoading({
+			title: '加载更多数据'
+		});
+		var isUp = this.data.page_total <= this.data.page_current++;
 		this.setData({
-			page_current: cpage,
+			page_current: this.data.page_current++,
+			isEnd: isUp
 		});
-		this.getRightArrary("加载更多数据").then(data => { //
+		var carrary = [];
+		for(var k = 0; k < this.data.page_current * this.data.page_size; k++) {
+			this.data.dataLeft[k] && carrary.push(this.data.dataLeft[k]);
+		}
+		setTimeout(() => {
 			this.setData({
-				secondCateGoryList: this.data.secondCateGoryList.concat(data)
+				firstCategoryList: carrary,
 			});
-		});
-		//		var isUp = this.data.page_total > this.data.page_current++;
-		//		this.setData({
-		//			page_current: this.data.page_current,
-		//			isEnd: isUp
-		//		});
-		//		this.getData("加载更多数据")
-		//		var carrary = [];
-		// for(var k = 0; k < this.data.page_current * this.data.page_size; k++) {
-		// 	// this.data.dataLeft[k] && carrary.push(this.data.dataLeft[k]);
-		//   var dataleftitem = this.data.dataLeft[k];
-		//   dataleftitem && carrary.push(this.getRightArry(this.data.sName));
-		// }
-		// debugger
-		//		carrary.push(this.getRightArry())
-		//		// setTimeout(() => {
-		//		// 	this.setData({
-		//		// 		firstCategoryList: carrary,
-		//		// 	});
-		//		// 	wx.hideLoading();
-		//		// }, 1000);
-		//		setTimeout(() => {
-		//			this.setData({
-		//				secondCateGoryList: carrary,
-		//			});
-		//			wx.hideLoading();
-		//		}, 1000);
+			wx.hideLoading();
+		}, 2000);
 	},
-	tapName: function(e) {
-		var uid = e.currentTarget.dataset.uid;
-		wx.navigateTo({
-			url: '../question/question?uid=' + uid
-		})
-	},
+tapName:function(){
+	wx.navigateTo({
+  url: '../question/question'
+})
+},
 	/**
 	 * 用户点击右上角分享
 	 */
