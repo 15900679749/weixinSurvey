@@ -1,0 +1,6 @@
+<canvas hidden='{{hide_canvas}}' id='cover-preview' bindtouchstart='canvas_start' bindtouchmove='canvas_move' bindtouchend='canvas_end' disable-scroll='true' canvas-id='cover-preview'>
+    <cover-view catchtap='upload_bg' id='croper-sure'>确定</cover-view>
+    <cover-view catchtap='cancel_croper' id='croper-cancel'>取消</cover-view>
+    <cover-view id='croper'></cover-view>
+ </canvas> 
+<view>ss</view>

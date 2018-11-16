@@ -1,0 +1,7 @@
+<view class='container'>
+<scroll-view scroll-y="true" scroll-x="true" class = "FilePath" bindtouchmove="scroll" bindtouchstart='scroll' bindtouchend='endTou'>
+    <image src='{{src}}' style="width: {{width}}px;height: {{height}}px;" bindtouchmove="touch"></image>
+  </scroll-view>
+<canvas canvas-id="myCanvas_A" style="width: {{width}}px;height: {{height}}px;"/>
+  <view class='choose-img' bindtap='uploadTap'>choose Img</view>
+</view>
